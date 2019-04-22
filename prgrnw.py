@@ -7,6 +7,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import TimeoutException
 
 def main():
 
@@ -17,7 +18,12 @@ def main():
       return
 
    browser = webdriver.Firefox()
-   browser.get('http://pergamum.ufpe.br/pergamum/biblioteca/index.php')
+   browser.set_page_load_timeout(10)
+   try:
+      browser.get('http://pergamum.ufpe.br/pergamum/biblioteca/index.php')
+   except TimeoutException:
+      # if timeout, stop page load, should continue working just as fine
+      browser.execute_script("window.stop();")
 
    div_login = browser.find_element_by_id('div_login')
    div_login.click()
@@ -51,14 +57,21 @@ def main():
    for handle in browser.window_handles:
       browser.switch_to_window(handle)
 
-   process_meu_pergamum(browser)
-   
-def process_meu_pergamum(browser):
+   books = get_MP_books(browser)
+
+   for book in books:
+      print_book_info(book)
+
+def get_MP_books(browser):
+   "gets books listed in Meu Pergamum's Pending Titles page"
    wanted_div_id = 'Accordion1'
    # wait for Accordion1 to show
    WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.ID, wanted_div_id)))
    booksTable = browser.find_elements_by_xpath("//div[@id='" + wanted_div_id + "']/div[1]/div[2]/table[1]/tbody[1]/tr[position()>1]")
    # position() > 1 to ignore header tr
+
+   books = []
+
    for tr in booksTable:
       book_info = []
 
@@ -66,10 +79,12 @@ def process_meu_pergamum(browser):
          # first and last td are useless to us.
          book_info.append(td)
 
-      print_book_info(*book_info)
-      print()
+      books.append(book_info)
 
-def print_book_info(book_name, book_return, book_limit, book_renewal):
+   return books
+
+def print_book_info(book):
+   book_name, book_return, book_limit, book_renewal = book
    today = datetime.datetime.today()
    return_date = datetime.datetime.strptime(book_return.text.strip() + ' 23:59:59', '%d/%m/%Y %H:%M:%S')
    timedelta = return_date-today
