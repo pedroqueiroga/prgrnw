@@ -10,7 +10,11 @@ from selenium.webdriver.common.keys import Keys
 
 def main():
 
-   cpf, senha = pega_credenciais('credenciais')
+   try:
+      cpf, senha = pega_credenciais('credenciais')
+   except Exception as e:
+      print('Cheque o arquivo das credenciais, algo não está correto.')
+      return
 
    browser = webdriver.Firefox()
    browser.get('http://pergamum.ufpe.br/pergamum/biblioteca/index.php')
