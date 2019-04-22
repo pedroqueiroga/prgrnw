@@ -51,9 +51,12 @@ def main():
    for handle in browser.window_handles:
       browser.switch_to_window(handle)
 
+   process_meu_pergamum(browser)
+   
+def process_meu_pergamum(browser):
    wanted_div_id = 'Accordion1'
    # wait for Accordion1 to show
-   wait.until(ec.presence_of_element_located((By.ID, wanted_div_id)))
+   WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.ID, wanted_div_id)))
    booksTable = browser.find_elements_by_xpath("//div[@id='" + wanted_div_id + "']/div[1]/div[2]/table[1]/tbody[1]/tr[position()>1]")
    # position() > 1 to ignore header tr
    for tr in booksTable:
