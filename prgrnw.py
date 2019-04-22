@@ -1,5 +1,7 @@
 import datetime
 import time
+import os
+
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
@@ -7,6 +9,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
 def main():
+
+   cpf, senha = pega_credenciais('credenciais')
+
    browser = webdriver.Firefox()
    browser.get('http://pergamum.ufpe.br/pergamum/biblioteca/index.php')
 
@@ -21,16 +26,16 @@ def main():
    login_box = browser.find_element_by_id('login_acesso')
    passw_box = browser.find_element_by_id('senha_acesso')
 
-   # TODO: uma forma melhor de receber login e senha
-   #       pegar de um arquivo config?
-   cpf = '' # PREENCHER LOGIN AQUI
-   senha = '' # PREENCHER SENHA AQUI
-   login_box.send_keys(cpf)
-   passw_box.send_keys(senha)
-   passw_box.send_keys(Keys.RETURN)
+   try:
+      login_box.send_keys(cpf)
+      passw_box.send_keys(senha)
+      passw_box.send_keys(Keys.RETURN)
 
-   # wait for logout to show, which means meu pergamum will now do what I want
-   wait.until(ec.presence_of_element_located((By.ID, 'div_logout')))
+      # wait for logout to show, which means meu pergamum will now do what I want
+      wait.until(ec.presence_of_element_located((By.ID, 'div_logout')))
+   except Exception as e:
+      print('Não foi possível fazer o login no Pergamum. Cheque seu CPF e senha.')
+      return
 
    meu_pergamum = browser.find_element_by_link_text('Meu Pergamum')
    meu_pergamum.click()
@@ -86,5 +91,16 @@ def print_book_info(book_name, book_return, book_limit, book_renewal):
          print(' Retorne este livro HOJE!')
       elif timedelta.days == 1:
          print(' Lembre-se de retornar este livro amanhã!')
+
+def pega_credenciais(file_name):
+   with open(file_name, 'r') as credf:
+      lines = credf.readlines()
+      if len(lines) != 2:
+         raise Exception('Arquivo de credenciais não existe, ou não presta.')
       
+      cpf = lines[0].strip()
+      senha = lines[1].strip()
+
+   return cpf, senha
+   
 main()
