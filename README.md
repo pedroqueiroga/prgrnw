@@ -1,0 +1,1 @@
+Objetivos: Conseguir renovar um livro automaticamente, e criar cronjobs que executam este script num dia conveniente.
