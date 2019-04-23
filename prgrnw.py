@@ -62,6 +62,7 @@ def main():
    for book in books:
       print_book_info(book)
 
+
 def get_MP_books(browser):
    "gets books listed in Meu Pergamum's Pending Titles page"
    wanted_div_id = 'Accordion1'
@@ -83,35 +84,61 @@ def get_MP_books(browser):
 
    return books
 
-def print_book_info(book):
-   book_name, book_return, book_limit, book_renewal = book
+def pt_timeleft(timeleft):
+   portuguese_tl = str(timeleft).replace('day', 'dia').replace(':', 'h', 1)
+   portuguese_tl = portuguese_tl[:portuguese_tl.index(':')] + 'm'
+
+   return portuguese_tl
+   
+def book_timeleft(book):
+   # book_name, book_return, book_limit, book_renewal = book
+   book_return = book[1]
    today = datetime.datetime.today()
    return_date = datetime.datetime.strptime(book_return.text.strip() + ' 23:59:59', '%d/%m/%Y %H:%M:%S')
-   timedelta = return_date-today
+   timeleft = return_date-today
+
+   return timeleft
+
+def book_expired(timeleft):
+   return timeleft.days < 0
+
+def book_returns_left(book):
+   # book_name, book_return, book_limit, book_renewal = book
+   book_limit = book[2]
    parsed_limit = book_limit.text.split(' / ')
    nreturns_left = int(parsed_limit[1]) - int(parsed_limit[0])
 
-   portuguese_td = str(timedelta).replace('day', 'dia').replace(':', 'h', 1)
-   portuguese_td = portuguese_td[:portuguese_td.index(':')] + 'm'
+   return nreturns_left
+
+def print_book_info(book):
+   # book_name, book_return, book_limit, book_renewal = book
+   book_name = book[0]
+
+   timeleft = book_timeleft(book)
+   portuguese_tl = pt_timeleft(timeleft)
+   book_exp = book_expired(timeleft)
+
+   nreturns_left = book_returns_left(book)
    
    print('>',book_name.text)
-   if timedelta.days >= 0:
-      print('\tTempo de aluguel restante:', portuguese_td)
-   else:
-      print('\tEste livro está atrasado', -(timedelta.days), 'dia' + ('s.' if timedelta.days < -1 else '.'))
 
-   end = ('' if timedelta.days < 2 and timedelta.days >= 0 else '\n')
-   if nreturns_left > 0 and timedelta.days >= 0:
+   if not book_exp:
+      print('\tTempo de aluguel restante:', portuguese_tl)
+   else:
+      print('\tEste livro está atrasado', -(timeleft.days), 'dia' + ('s.' if timeleft.days < -1 else '.'))
+
+   end = ('' if timeleft.days < 2 and timeleft.days >= 0 else '\n')
+   if nreturns_left > 0 and not book_exp:
       print('\tVocê pode renová-lo mais', nreturns_left, 'vez' + ('es.' if nreturns_left > 2 else '.'), end=end)
-      if timedelta.days == 0:
+      if timeleft.days == 0:
          print(' Renove este livro ainda hoje!!')
-      elif timedelta.days == 1:
+      elif timeleft.days == 1:
          print(' Renove este livro amanhã!')
    else:
       print('\tVocê não pode renová-lo.', end=end)
-      if timedelta.days == 0:
+      if timeleft.days == 0:
          print(' Retorne este livro HOJE!')
-      elif timedelta.days == 1:
+      elif timeleft.days == 1:
          print(' Lembre-se de retornar este livro amanhã!')
 
 def pega_credenciais(file_name):
