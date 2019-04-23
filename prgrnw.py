@@ -8,6 +8,7 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.firefox.options import Options
 
 def main():
 
@@ -17,7 +18,9 @@ def main():
       print('Cheque o arquivo das credenciais, algo não está correto.')
       return
 
-   browser = webdriver.Firefox()
+   options = Options()
+   options.headless = True
+   browser = webdriver.Firefox(options=options)
    browser.set_page_load_timeout(10)
    try:
       browser.get('http://pergamum.ufpe.br/pergamum/biblioteca/index.php')
@@ -57,18 +60,62 @@ def main():
    for handle in browser.window_handles:
       browser.switch_to_window(handle)
 
+   up_dates = set()
+   up_names = []
+      
+   while True:
+         new_date,book_name = renew_MP_books(browser)
+         if new_date == None or book_name == None: # in reality, can't be just one, but this is looser, so it is better
+            break
+         print('RENOVADOS:')
+         print('\t', book_name, sep='')
+         print('\t', new_date, sep='')
+         up_dates.add(new_date)
+         up_names.append(book_name)
+      
    books = get_MP_books(browser)
 
+   print('*** Estado atual dos livros ***')
    for book in books:
       print(book_str_info(book))
 
-   for book in books:
-      if book_should_renew(book):
-         new_date = renew(browser, book)
-         print(new_date)
-         break
-      
+   print('criando at para rodar este script nos dias:')
+   for d in up_dates:
+      print('\t', d, sep='')
+      stupid_date = stupid_format_date(d)
+      os.system('echo \"python3 prgrnw.py\" | at -m 7:00 PM ' + stupid_date)
 
+def stupid_format_date(date):
+   splitted = date.split('/')
+   if len(splitted) != 3:
+      return None
+   return splitted[1] + '/' + splitted[0] + '/' +  splitted[2]
+
+def renew_MP_books(browser):
+   # like get_MP_books, but with less queries, since won't create 10 DOM references, when I only need one, because all the other get stale.
+   wanted_div_id = 'Accordion1'
+   # wait for Accordion1 to show
+   WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.ID, wanted_div_id)))
+   booksTable = browser.find_elements_by_xpath("//div[@id='" + wanted_div_id + "']/div[1]/div[2]/table[1]/tbody[1]/tr[position()>1]")
+   # position() > 1 to ignore header tr
+
+   new_date = None
+   book_name = None
+
+   for tr in booksTable:
+      book = []
+
+      for td in tr.find_elements_by_xpath("./td[position()>1 and position() < last()]"):
+         # first and last td are useless to us.
+         book.append(td)
+
+      if book_should_renew(book):
+         book_name = book[0].text
+         new_date = renew(browser, book)
+         break
+
+   return new_date, book_name
+         
 def get_MP_books(browser):
    "gets books listed in Meu Pergamum's Pending Titles page"
    wanted_div_id = 'Accordion1'
