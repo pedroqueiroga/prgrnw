@@ -62,10 +62,11 @@ def main():
    for book in books:
       print(book_str_info(book))
 
-   #for book in books:
-    #  if book_should_renew(book):
-     #    renew(browser, book)
-      #   break
+   for book in books:
+      if book_should_renew(book):
+         new_date = renew(browser, book)
+         print(new_date)
+         break
       
 
 def get_MP_books(browser):
@@ -94,7 +95,10 @@ def renew(browser, book):
    print('Vou renovar:', book_name.text)
    book_renewal.click()
 
-   new_return_date = browser.find_element_by_xpath("//div[@id='meio']/table[1]/tbody[1]/tr[1]/td[2]/table[1]/tbody[1]/tr[2]/td[1]/table[1]/tbody[1]/tr[1]/td[1]/table[1]/tbody[1]/tr[1]/td[1]/table[3]/tbody[1]/tr[1]/td[3]")
+   new_return_date = WebDriverWait(browser,10).until(ec.presence_of_element_located((By.XPATH, "//div[@id='meio']/table[1]/tbody[1]/tr[1]/td[2]/table[1]/tbody[1]/tr[2]/td[1]/table[1]/tbody[1]/tr[1]/td[1]/table[1]/tbody[1]/tr[1]/td[1]/table[3]/tbody[1]/tr[1]/td[3]")))
+
+   new_rd = new_return_date.text.strip().split(' ')[0]
+   print('peguei essa merda aqui ó:', new_rd)
 
    back = browser.find_element_by_id('btn_gravar4')
    back.click()
@@ -103,8 +107,6 @@ def renew(browser, book):
    # wait for Accordion1 to show
    WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.ID, wanted_div_id)))
 
-   new_rd = new_return_date.text.strip().split(' ')[0]
-   print('peguei essa merda aqui ó:', new_rd)
    return new_rd
 
 def pt_timeleft(timeleft):
