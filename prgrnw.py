@@ -60,12 +60,12 @@ def main():
    books = get_MP_books(browser)
 
    for book in books:
-      book_print_info(book)
+      print(book_str_info(book))
 
-   for book in books:
-      if book_should_renew(book):
-         renew(browser, book)
-         break
+   #for book in books:
+    #  if book_should_renew(book):
+     #    renew(browser, book)
+      #   break
       
 
 def get_MP_books(browser):
@@ -93,7 +93,19 @@ def renew(browser, book):
    book_name, book_return, book_limit, book_renewal = book
    print('Vou renovar:', book_name.text)
    book_renewal.click()
+
+   new_return_date = browser.find_element_by_xpath("//div[@id='meio']/table[1]/tbody[1]/tr[1]/td[2]/table[1]/tbody[1]/tr[2]/td[1]/table[1]/tbody[1]/tr[1]/td[1]/table[1]/tbody[1]/tr[1]/td[1]/table[3]/tbody[1]/tr[1]/td[3]")
+
+   back = browser.find_element_by_id('btn_gravar4')
+   back.click()
    
+   wanted_div_id = 'Accordion1'
+   # wait for Accordion1 to show
+   WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.ID, wanted_div_id)))
+
+   new_rd = new_return_date.text.strip().split(' ')[0]
+   print('peguei essa merda aqui ó:', new_rd)
+   return new_rd
 
 def pt_timeleft(timeleft):
    portuguese_tl = str(timeleft).replace('day', 'dia').replace(':', 'h', 1)
@@ -126,8 +138,9 @@ def book_returns_left(book):
 
    return nreturns_left
 
-def book_print_info(book):
+def book_str_info(book):
    # book_name, book_return, book_limit, book_renewal = book
+   info = ''
    book_name = book[0]
 
    timeleft = book_timeleft(book)
@@ -136,26 +149,28 @@ def book_print_info(book):
 
    nreturns_left = book_returns_left(book)
    
-   print('>',book_name.text)
+   info += '> ' + book_name.text + '\n'
 
    if not book_exp:
-      print('\tTempo de aluguel restante:', portuguese_tl)
+      info += '\tTempo de aluguel restante: ' +  portuguese_tl + '\n'
    else:
-      print('\tEste livro está atrasado', -(timeleft.days), 'dia' + ('s.' if timeleft.days < -1 else '.'))
+      info += '\tEste livro está atrasado ' + str(-(timeleft.days)) + ' dia' + ('s.' if timeleft.days < -1 else '.') + '\n'
 
    end = ('' if timeleft.days < 2 and timeleft.days >= 0 else '\n')
    if nreturns_left > 0 and not book_exp:
-      print('\tVocê pode renová-lo mais', nreturns_left, 'vez' + ('es.' if nreturns_left > 2 else '.'), end=end)
+      info += '\tVocê pode renová-lo mais ' + str(nreturns_left) + ' vez' + ('es.' if nreturns_left > 2 else '.') + end
       if timeleft.days == 0:
-         print(' Renove este livro ainda hoje!!')
+         info += ' Renove este livro ainda hoje!!\n'
       elif timeleft.days == 1:
-         print(' Renove este livro amanhã!')
+         info += ' Renove este livro amanhã!\n'
    else:
-      print('\tVocê não pode renová-lo.', end=end)
+      info += '\tVocê não pode renová-lo.' + end
       if timeleft.days == 0:
-         print(' Retorne este livro HOJE!')
+         info += ' Retorne este livro HOJE!\n'
       elif timeleft.days == 1:
-         print(' Lembre-se de retornar este livro amanhã!')
+         info += ' Lembre-se de retornar este livro amanhã!\n'
+
+   return info
 
 def pega_credenciais(file_name):
    with open(file_name, 'r') as credf:
