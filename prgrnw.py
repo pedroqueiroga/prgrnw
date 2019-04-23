@@ -60,8 +60,13 @@ def main():
    books = get_MP_books(browser)
 
    for book in books:
-      print_book_info(book)
+      book_print_info(book)
 
+   for book in books:
+      if book_should_renew(book):
+         renew(browser, book)
+         break
+      
 
 def get_MP_books(browser):
    "gets books listed in Meu Pergamum's Pending Titles page"
@@ -84,12 +89,18 @@ def get_MP_books(browser):
 
    return books
 
+def renew(browser, book):
+   book_name, book_return, book_limit, book_renewal = book
+   print('Vou renovar:', book_name.text)
+   book_renewal.click()
+   
+
 def pt_timeleft(timeleft):
    portuguese_tl = str(timeleft).replace('day', 'dia').replace(':', 'h', 1)
    portuguese_tl = portuguese_tl[:portuguese_tl.index(':')] + 'm'
 
    return portuguese_tl
-   
+
 def book_timeleft(book):
    # book_name, book_return, book_limit, book_renewal = book
    book_return = book[1]
@@ -102,6 +113,11 @@ def book_timeleft(book):
 def book_expired(timeleft):
    return timeleft.days < 0
 
+def book_should_renew(book):
+   timeleft = book_timeleft(book)
+   nreturns_left = book_returns_left(book)
+   return timeleft.days == 0 and nreturns_left > 0
+
 def book_returns_left(book):
    # book_name, book_return, book_limit, book_renewal = book
    book_limit = book[2]
@@ -110,7 +126,7 @@ def book_returns_left(book):
 
    return nreturns_left
 
-def print_book_info(book):
+def book_print_info(book):
    # book_name, book_return, book_limit, book_renewal = book
    book_name = book[0]
 
