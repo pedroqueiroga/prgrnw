@@ -141,7 +141,7 @@ def main():
          late.append(book_name)
       elif book_returns_left(book) == 0:
          cant_renew.append(book_name)
-      elif not atq_user_dates(return_date, ''):
+      elif not atq_user_dates(return_date, cpf):
          up_dates.add(return_date)
          up_names.append(book_name)
 
@@ -163,8 +163,10 @@ def main():
       print(string)
 
       stupid_date = stupid_format_date(d)
+
+      echo = "echo \"python3 prgrnw.py {}\"".format(cpf)
       
-      string = cmd('echo \"python3 prgrnw.py\" | at -m 7:00 PM ' + stupid_date)
+      string = cmd(echo + ' | at -m 7:00 PM ' + stupid_date)
       big_email_string += string + '\n'
       print(string)
 
