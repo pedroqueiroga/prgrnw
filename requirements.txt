@@ -1,0 +1,2 @@
+mysql-connector~=2.2.9
+selenium~=3.141.0
