@@ -3,7 +3,7 @@ import time
 import os
 
 from send_mail import send_mail
-from utils import pega_credenciais, cmd
+from utils import pega_credenciais, cmd, atq_user_dates
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -108,6 +108,14 @@ def main():
 
       string=book_str_info(book)
       big_email_string += string + '\n'
+
+      return_date = book[1].text.strip()
+      book_name = book[0].text
+
+      if not atq_user_dates(return_date, ''):
+         up_dates.add(return_date)
+         up_names.append(book_name)
+
       print(string)
 
    n_days = len(up_dates)
