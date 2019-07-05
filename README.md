@@ -9,5 +9,4 @@ Entra no pergamum e insere essas credenciais, renova todos os livros que podem s
 
 * TODO: Livro virar classe, e mais refactors que estão bem óbvios.
 * TODO: Tentar encontrar uma forma melhor de guardar as credenciais.
-* TODO: Escrever um e-mail melhor para quando não for possível renovar.(atrasado/precisa ser retornado)
 * TODO: Empacotar, para instalar dependências e tal (geckodriver -> selenium, at(?))

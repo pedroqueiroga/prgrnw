@@ -103,6 +103,9 @@ def main():
    string = '*** Estado atual dos livros ***'
    big_email_string += string + '\n'
    print(string)
+
+   late = []
+   cant_renew = []
    
    for book in books:
 
@@ -112,7 +115,11 @@ def main():
       return_date = book[1].text.strip()
       book_name = book[0].text
 
-      if not atq_user_dates(return_date, ''):
+      if book_expired(book_timeleft(book)):
+         late.append(book_name)
+      elif book_returns_left(book) == 0:
+         cant_renew.append(book_name)
+      elif not atq_user_dates(return_date, ''):
          up_dates.add(return_date)
          up_names.append(book_name)
 
@@ -138,6 +145,31 @@ def main():
       string = cmd('echo \"python3 prgrnw.py\" | at -m 7:00 PM ' + stupid_date)
       big_email_string += string + '\n'
       print(string)
+
+
+   if len(late) > 0 or len(cant_renew) > 0:
+      string = '-' * 80
+      big_email_string += string + '\n'
+      print(string)
+      
+   if len(late) > 0:
+      string = 'ATRASADO' + ('S' if len(late) > 1 else '') + ':'
+      big_email_string += string + '\n'
+      print(string)
+      for b in late:
+         string = '\t' + b
+         big_email_string += string + '\n'
+         print(string)
+
+   if len(cant_renew) > 0:
+      string = 'ZERO RENOVAÇÕES DISPONÍVEIS:'
+      big_email_string += string + '\n'
+      print(string)
+      for b in cant_renew:
+         string = '\t' + b
+         big_email_string += string + '\n'
+         print(string)
+      
 
    print('*'*80)
    big_email_string += ('*' * 80) + '\n'
