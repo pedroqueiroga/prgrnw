@@ -1,7 +1,18 @@
 import subprocess
+import re
+
 
 def cmd(command):
-    return subprocess.check_output(command, shell=True)
+    result = subprocess.check_output(command, shell=True) #.decode()
+    ret = ''
+    
+    try:
+        ret = result.decode()
+    except:
+        ret = result
+
+    return ret
+
 
 def pega_credenciais(file_name):
    with open(file_name, 'r') as credf:
@@ -13,3 +24,5 @@ def pega_credenciais(file_name):
       pwd = lines[1].strip()
 
    return usr, pwd
+
+
