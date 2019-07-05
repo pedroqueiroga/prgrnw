@@ -2,6 +2,9 @@ import datetime
 import time
 import os
 
+from send_mail import send_mail
+from utils import pega_credenciais, cmd
+
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
@@ -12,16 +15,25 @@ from selenium.webdriver.firefox.options import Options
 
 def main():
 
+   big_email_string = ''
+   
    try:
       cpf, senha = pega_credenciais('credenciais')
    except Exception as e:
-      print('Cheque o arquivo das credenciais, algo não está correto.')
+      string = 'Cheque o arquivo das credenciais, algo não está correto.'
+      big_email_string += string + '\n'
+
+      #TODO: send e-mail
+      
+      print(string)
       return
 
    options = Options()
    options.headless = True
    browser = webdriver.Firefox(options=options)
-   browser.set_page_load_timeout(10)
+
+   timeout=5 # seconds
+   browser.set_page_load_timeout(timeout)
    try:
       browser.get('http://pergamum.ufpe.br/pergamum/biblioteca/index.php')
    except TimeoutException:
@@ -47,13 +59,16 @@ def main():
       # wait for logout to show, which means meu pergamum will now do what I want
       wait.until(ec.presence_of_element_located((By.ID, 'div_logout')))
    except Exception as e:
-      print('Não foi possível fazer o login no Pergamum. Cheque seu CPF e senha.')
+      string ='Não foi possível fazer o login no Pergamum. Cheque seu CPF e senha.'
+      big_email_string += string + '\n'
+      print(string)
       return
 
    meu_pergamum = browser.find_element_by_link_text('Meu Pergamum')
    meu_pergamum.click()
 
    # wait for new window (meu pergamum)
+   # 2 because before this one opened, there was only 1 window handler!
    wait.until(lambda _: len(browser.window_handles) == 2)
 
    # switch to meu pergamum's window
@@ -67,24 +82,60 @@ def main():
          new_date,book_name = renew_MP_books(browser)
          if new_date == None or book_name == None: # in reality, can't be just one, but this is looser, so it is better
             break
-         print('RENOVADOS:')
-         print('\t', book_name, sep='')
-         print('\t', new_date, sep='')
+
+         string = 'RENOVADOS:'
+         big_email_string += string + '\n'
+         print(string)
+
+         string = '\t' + book_name
+         big_email_string += string + '\n'
+         print(string)
+
+         string = '\t' + new_date
+         big_email_string += string + '\n'
+         print(string)
+         
          up_dates.add(new_date)
          up_names.append(book_name)
       
    books = get_MP_books(browser)
 
-   print('*** Estado atual dos livros ***')
+   string = '*** Estado atual dos livros ***'
+   big_email_string += string + '\n'
+   print(string)
+   
    for book in books:
-      print(book_str_info(book))
 
-   print('criando at para rodar este script nos dias:')
+      string=book_str_info(book)
+      big_email_string += string + '\n'
+      print(string)
+
+   n_days = len(up_dates)
+   plural = ''
+   if n_days >= 2:
+      plural = 's'
+
+   if n_days > 0:
+      string = 'criando at para rodar este script no' + plural + ' dia' + plural +':'
+      big_email_string += string +'\n'
+      print(string)
+
    for d in up_dates:
-      print('\t', d, sep='')
-      stupid_date = stupid_format_date(d)
-      os.system('echo \"python3 prgrnw.py\" | at -m 7:00 PM ' + stupid_date)
+      string = '\t' + d
+      big_email_string += string + '\n'
+      print(string)
 
+      stupid_date = stupid_format_date(d)
+      
+      string = cmd('echo \"python3 prgrnw.py\" | at -m 7:00 PM ' + stupid_date)
+      big_email_string += string + '\n'
+      print(string)
+
+   print('*'*80)
+   big_email_string += ('*' * 80) + '\n'
+
+   #TODO: send e-mail
+   
 def stupid_format_date(date):
    splitted = date.split('/')
    if len(splitted) != 3:
@@ -220,16 +271,5 @@ def book_str_info(book):
          info += ' Lembre-se de retornar este livro amanhã!\n'
 
    return info
-
-def pega_credenciais(file_name):
-   with open(file_name, 'r') as credf:
-      lines = credf.readlines()
-      if len(lines) != 2:
-         raise Exception('Arquivo de credenciais não existe, ou não presta.')
-      
-      cpf = lines[0].strip()
-      senha = lines[1].strip()
-
-   return cpf, senha
    
 main()
