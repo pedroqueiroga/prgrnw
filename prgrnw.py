@@ -3,7 +3,10 @@ import time
 import os
 
 from send_mail import send_mail
-from utils import pega_credenciais, cmd, atq_user_dates, parse_cmd_line
+from utils import cmd, atq_user_dates, parse_cmd_line
+import database
+import config
+import exceptions
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -18,16 +21,34 @@ def main():
    big_email_string = ''
    user = parse_cmd_line()
    try:
-      cpf, senha = pega_credenciais('credenciais' + user)
+      mydb = database.PrgrnwDB('localhost', 'root', config.DB_PASSWD)
+   except exceptions.DBNotFound as e:
+      # these catches should actually log
+      string = 'Base dados não encontrada.'
+      print(string)
+      return
+   except exceptions.DBAccessDenied as e:
+      string = 'Acesso ao banco de dados negado.'
+      print(string)
+      return
    except Exception as e:
       string = 'Cheque o arquivo das credenciais, algo não está correto.'
-      big_email_string += string + '\n'
-
-      
-      
       print(string)
       return
 
+   try:
+      creds = mydb.pega_credenciais(user)
+   finally:
+      mydb.close()
+
+   if creds:
+      cpf, senha, email = creds
+   else:
+      string = 'Usuario ({}) não consta na base de dados'.format(user)
+      print(string)
+      return
+   
+   
    options = Options()
    options.headless = True
    browser = webdriver.Firefox(options=options)
@@ -175,7 +196,7 @@ def main():
    print('*'*80)
    big_email_string += ('*' * 80) + '\n'
    browser.quit()
-
+   send_mail(email, big_email_string)
    
 def stupid_format_date(date):
    splitted = date.split('/')

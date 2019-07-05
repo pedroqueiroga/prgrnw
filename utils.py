@@ -1,4 +1,5 @@
 import subprocess
+import sys
 import re
 from datetime import datetime
 
@@ -12,19 +13,6 @@ def cmd(command):
         ret = result
 
     return ret
-
-
-def pega_credenciais(file_name):
-   with open(file_name, 'r') as credf:
-      lines = credf.readlines()
-      if len(lines) != 2:
-         raise Exception('Arquivo de credenciais não existe, ou não presta.')
-      
-      usr = lines[0].strip()
-      pwd = lines[1].strip()
-
-   return usr, pwd
-
 
 def atq_user_dates(date_wanted, user_wanted):
     "date_wanted deve estar no formato '%d/%m/%Y'"
@@ -48,4 +36,8 @@ def atq_user_dates(date_wanted, user_wanted):
     return False
         
         
-        
+def parse_cmd_line():
+    if len(sys.argv) > 1:
+        return sys.argv[1]
+    else:
+        return ''
