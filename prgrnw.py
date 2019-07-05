@@ -3,7 +3,7 @@ import time
 import os
 
 from send_mail import send_mail
-from utils import pega_credenciais, cmd, atq_user_dates
+from utils import pega_credenciais, cmd, atq_user_dates, parse_cmd_line
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -16,14 +16,14 @@ from selenium.webdriver.firefox.options import Options
 def main():
 
    big_email_string = ''
-   
+   user = parse_cmd_line()
    try:
-      cpf, senha = pega_credenciais('credenciais')
+      cpf, senha = pega_credenciais('credenciais' + user)
    except Exception as e:
       string = 'Cheque o arquivo das credenciais, algo não está correto.'
       big_email_string += string + '\n'
 
-      #TODO: send e-mail
+      
       
       print(string)
       return
@@ -62,6 +62,7 @@ def main():
       string ='Não foi possível fazer o login no Pergamum. Cheque seu CPF e senha.'
       big_email_string += string + '\n'
       print(string)
+      browser.quit()
       return
 
    meu_pergamum = browser.find_element_by_link_text('Meu Pergamum')
@@ -173,8 +174,8 @@ def main():
 
    print('*'*80)
    big_email_string += ('*' * 80) + '\n'
+   browser.quit()
 
-   #TODO: send e-mail
    
 def stupid_format_date(date):
    splitted = date.split('/')
@@ -312,4 +313,6 @@ def book_str_info(book):
 
    return info
    
+
+
 main()
