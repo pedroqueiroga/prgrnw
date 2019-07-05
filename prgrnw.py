@@ -258,7 +258,7 @@ def book_str_info(book):
 
    end = ('' if timeleft.days < 2 and timeleft.days >= 0 else '\n')
    if nreturns_left > 0 and not book_exp:
-      info += '\tVocê pode renová-lo mais ' + str(nreturns_left) + ' vez' + ('es.' if nreturns_left > 2 else '.') + end
+      info += '\tVocê pode renová-lo mais ' + str(nreturns_left) + ' vez' + ('es.' if nreturns_left > 1 else '.') + end
       if timeleft.days == 0:
          info += ' Renove este livro ainda hoje!!\n'
       elif timeleft.days == 1:
