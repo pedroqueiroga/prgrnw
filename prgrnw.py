@@ -21,33 +21,24 @@ def main():
    big_email_string = ''
    user = parse_cmd_line()
    try:
-      mydb = database.PrgrnwDB('localhost', 'root', config.DB_PASSWD)
-   except exceptions.DBNotFound as e:
-      # these catches should actually log
-      string = 'Base dados não encontrada.'
-      print(string)
-      return
-   except exceptions.DBAccessDenied as e:
-      string = 'Acesso ao banco de dados negado.'
-      print(string)
-      return
+      mydb = database.PrgrnwDB('root', config.DB_PASSWD)
    except Exception as e:
+      # these catches should actually log
       string = 'Cheque o arquivo das credenciais, algo não está correto.'
       print(string)
       return
 
    try:
-      creds = mydb.pega_credenciais(user)
-   finally:
-      mydb.close()
-
-   if creds:
-      cpf, senha, email = creds
-   else:
+      creds = mydb.get_user(user)
+   except Exception as e:
+      print(e.message, e.args)
       string = 'Usuario \'{}\' não consta na base de dados'.format(user)
       print(string)
       return
-   
+   finally:
+      mydb.close()
+
+   username, cpf, senha, email = creds
    
    options = Options()
    options.headless = True
