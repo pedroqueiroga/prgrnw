@@ -1,4 +1,4 @@
-import mysql.connector
+import psycopg2
 import exceptions
 
 class PrgrnwDB:
@@ -7,21 +7,12 @@ class PrgrnwDB:
     __db_name='prgrnw'
 
     def __init__(self, host, user, passwd):
-        try:
-            self.__cnx = mysql.connector.connect(
-                host=host,
-                user=user,
-                passwd=passwd,
-                database=self.__db_name
-            )
-        except mysql.connector.errors.ProgrammingError as e:
-            if e.split()[0] == '1049':
-                raise exceptions.DBNotFound('db not found: {}'.format(self.__db_name))
-            if e.split()[0] == '1045':
-                raise exceptions.DBAccessDenied('access denied for {}@{}'.format(user,host))
-            else:
-                raise e    
-
+        self.__cnx = psycopg2.connect(
+            host=host,
+            user=user,
+            password=passwd,
+            dbname=self.__db_name
+        )
         self.__cursor = self.__cnx.cursor()
 
 
