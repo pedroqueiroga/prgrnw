@@ -14,7 +14,7 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.chrome.options import Options
 
 def main():
 
@@ -44,14 +44,14 @@ def main():
    if creds:
       cpf, senha, email = creds
    else:
-      string = 'Usuario ({}) não consta na base de dados'.format(user)
+      string = 'Usuario \'{}\' não consta na base de dados'.format(user)
       print(string)
       return
    
    
    options = Options()
    options.headless = True
-   browser = webdriver.Firefox(options=options)
+   browser = webdriver.Chrome(options=options)
 
    timeout=5 # seconds
    browser.set_page_load_timeout(timeout)
