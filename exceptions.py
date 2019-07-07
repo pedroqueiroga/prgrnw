@@ -1,7 +1,10 @@
 # exceptions.py
 
-class DBNotFound:
+class DBNotFound(Exception):
     pass
 
-class DBAccessDenied:
+class DBAccessDenied(Exception):
+    pass
+
+class DBEncKeyNotFound(Exception):
     pass
