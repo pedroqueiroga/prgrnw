@@ -88,26 +88,33 @@ def prgrnw(user):
       browser.switch_to_window(handle)
 
    up_dates = set()
+
+   renovados = []
       
    while True:
-         new_date,book_name = renew_MP_books(browser)
-         if new_date == None or book_name == None: # in reality, can't be just one, but this is looser, so it is better
-            break
+      new_date,book_name = renew_MP_books(browser)
+      if new_date == None or book_name == None: # in reality, can't be just one, but this is looser, so it is better
+         break
 
-         string = 'RENOVADOS:'
-         big_email_string += string + '\n'
-         print(string)
+      renovados.append((book_name, new_date))
 
-         string = '\t' + book_name
-         big_email_string += string + '\n'
-         print(string)
-
-         string = '\t' + new_date
-         big_email_string += string + '\n'
-         print(string)
-         
-         up_dates.add(new_date)
+      up_dates.add(new_date)
       
+   if len(renovados) > 0:
+      string = 'RENOVADO' + ('S' if len(renovados) > 1 else '') + ':'
+      big_email_string += string + '\n'
+      print(string)
+
+   for renovado in renovados:
+      book_name, new_date = renovado
+      string = '\t' + book_name
+      big_email_string += string + '\n'
+      print(string)
+
+      string = '\t' + new_date
+      big_email_string += string + '\n'
+      print(string)
+         
    books = get_MP_books(browser)
 
    string = '*** Estado atual dos livros ***'

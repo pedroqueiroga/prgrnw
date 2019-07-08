@@ -65,7 +65,7 @@ def add_job(date, uid, now=False):
 
     print('added', 'type of date:', type(date), date, uid)
     if now == False:
-        dt = datetime.datetime.strptime("{}/{}/{} 07:00".format(date.day, date.month, date.year), "%m/%d/%Y %H:%M")
+        dt = datetime.datetime.strptime("{}/{}/{} 07:00".format(date.day, date.month, date.year), "%d/%m/%Y %H:%M")
     else:
         dt = datetime.datetime.now() + datetime.timedelta(seconds=20)
     print(dt)
