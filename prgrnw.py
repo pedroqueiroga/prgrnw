@@ -3,7 +3,7 @@ import time
 import os
 
 from send_mail import send_mail
-from utils import cmd, atq_user_dates, parse_cmd_line
+from utils import atq_user_dates, parse_cmd_line, add_job
 import database
 import config
 import exceptions
@@ -16,12 +16,11 @@ from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.options import Options
 
-def main():
+def prgrnw(user):
 
    big_email_string = ''
-   user = parse_cmd_line()
    try:
-      mydb = database.PrgrnwDB('root', config.DB_PASSWD)
+      mydb = database.PrgrnwDB('pedro', config.DB_PASSWD)
    except Exception as e:
       # these catches should actually log
       string = 'Cheque o arquivo das credenciais, algo não está correto.'
@@ -31,7 +30,7 @@ def main():
    try:
       creds = mydb.get_user(user)
    except Exception as e:
-      print(e.message, e.args)
+      print(e)
       string = 'Usuario \'{}\' não consta na base de dados'.format(user)
       print(string)
       return
@@ -44,7 +43,7 @@ def main():
    options.headless = True
    browser = webdriver.Chrome(options=options)
 
-   timeout=5 # seconds
+   timeout=10 # seconds
    browser.set_page_load_timeout(timeout)
    try:
       browser.get('http://pergamum.ufpe.br/pergamum/biblioteca/index.php')
@@ -89,7 +88,6 @@ def main():
       browser.switch_to_window(handle)
 
    up_dates = set()
-   up_names = []
       
    while True:
          new_date,book_name = renew_MP_books(browser)
@@ -109,7 +107,6 @@ def main():
          print(string)
          
          up_dates.add(new_date)
-         up_names.append(book_name)
       
    books = get_MP_books(browser)
 
@@ -119,6 +116,8 @@ def main():
 
    late = []
    cant_renew = []
+   possible_return_dates = set()
+   possible_return_names = []
    
    for book in books:
 
@@ -132,35 +131,41 @@ def main():
          late.append(book_name)
       elif book_returns_left(book) == 0:
          cant_renew.append(book_name)
-      elif not atq_user_dates(return_date, cpf):
-         up_dates.add(return_date)
-         up_names.append(book_name)
+      else:
+         dmy = list(map(int, return_date.split('/')))[::-1]
+
+         possible_return_dates.add(datetime.date(*dmy))
+         possible_return_names.append(book_name)
 
       print(string)
 
+   if len(possible_return_dates) > 0:
+      contemplated_dates=atq_user_dates(possible_return_dates, username)
+      new_dates = []
+      for i in possible_return_dates:
+         if i not in contemplated_dates:
+            up_dates.add(i)
+      
    n_days = len(up_dates)
+   print('up_dates', up_dates)
    plural = ''
    if n_days >= 2:
       plural = 's'
 
    if n_days > 0:
-      string = 'criando at para rodar este script no' + plural + ' dia' + plural +':'
+      string = 'criando job para rodar no' + plural + ' dia' + plural +':'
       big_email_string += string +'\n'
       print(string)
 
    for d in up_dates:
-      string = '\t' + d
+      string = '\t' + d.strftime("%d/%m/%Y")
       big_email_string += string + '\n'
       print(string)
 
-      stupid_date = stupid_format_date(d)
-
-      echo = "echo \"python3 prgrnw.py {}\"".format(cpf)
-      
-      string = cmd(echo + ' | at -m 7:00 PM ' + stupid_date)
-      big_email_string += string + '\n'
-      print(string)
-
+      # add job
+      print('adding job!!!')
+      print(d,username)
+      add_job(d, username)
 
    if len(late) > 0 or len(cant_renew) > 0:
       string = '-' * 80
@@ -328,5 +333,5 @@ def book_str_info(book):
    return info
    
 
-
-main()
+if __name__ == '__main__':
+   prgrnw(parse_cmd_line())

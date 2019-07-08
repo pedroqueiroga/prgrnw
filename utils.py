@@ -4,7 +4,11 @@ import re
 import socket
 import pickle
 
-from datetime import datetime, date
+import datetime
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+
 
 def cmd(command):
     result = subprocess.check_output(command, shell=True) #.decode()
@@ -17,13 +21,10 @@ def cmd(command):
 
     return ret
 
-def atq_user_dates(date_wanted, user_wanted):
-    "date_wanted deve estar no formato '%d/%m/%Y'"
+def atq_user_dates(dates_wanted, user_wanted):
+    "dates_wanted deve ser [date]"
 
-    # True se encontrou um prgrnw.py praquele user praquele dia
-    dmy = list(map(int, date_wanted.split('/')))[::-1]
-    datetimedate_wanted = date(*dmy)
-    print(datetimedate_wanted)
+    print(dates_wanted)
 
     HOST='127.0.0.1'
     PORT=65432
@@ -45,16 +46,39 @@ def atq_user_dates(date_wanted, user_wanted):
     else:
         raise Exception("teste")
 
-    print(jobs)
-    print(datetime.date(jobs[0].next_run_time))
-    matches = list(filter(lambda x: (datetime.date(x.next_run_time) == datetimedate_wanted and x.name == user_wanted), jobs))
-    print(matches)
+    print('jobs', jobs)
+    matches = list(filter(lambda x: (datetime.datetime.date(x.next_run_time) in dates_wanted and x.name == user_wanted), jobs))
+    print('matches', matches)
     for match in matches:
         print(match)
-    return len(matches) > 0
+    return [ datetime.datetime.date(i.next_run_time) for i in matches ]
         
 def parse_cmd_line():
     if len(sys.argv) > 1:
         return sys.argv[1]
     else:
         return ''
+
+def add_job(date, uid, now=False):
+    HOST='127.0.0.1'
+    PORT=65432
+
+    print('added', 'type of date:', type(date), date, uid)
+    if now == False:
+        dt = datetime.datetime.strptime("{}/{}/{} 07:00".format(date.day, date.month, date.year), "%m/%d/%Y %H:%M")
+    else:
+        dt = datetime.datetime.now() + datetime.timedelta(seconds=20)
+    print(dt)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((HOST, PORT))
+        job = {
+            'func': 'popo',
+            'trigger': 'date',
+            'next_run_time': dt,
+            'uid': uid,
+            'args': uid
+        }
+        s.sendall(pickle.dumps(job))
+    
+    print(job)
+    return

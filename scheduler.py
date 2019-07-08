@@ -32,6 +32,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             print(job)
             print(type(job))
             if job['func'] == 'popo':
-                scheduler.add_job(popo, trigger=job['trigger'], next_run_time=job['next_run_time'], misfire_grace_time=3600, name=job['uid'], args=job['args'])
+                scheduler.add_job(popo, trigger=job['trigger'], next_run_time=job['next_run_time'], misfire_grace_time=3600, name=job['uid'], args=[job['args']])
             elif job['func'] == 'get_jobs':
                 conn.sendall(pickle.dumps(scheduler.get_jobs()))
