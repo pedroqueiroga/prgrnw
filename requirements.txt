@@ -5,3 +5,5 @@ apscheduler
 sqlalchemy
 rq
 Django
+gunicorn
+django-heroku
