@@ -4,5 +4,4 @@ cryptography
 apscheduler
 sqlalchemy
 rq
-pickle
-socket
+Django
