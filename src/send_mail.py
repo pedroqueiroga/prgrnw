@@ -2,20 +2,22 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-import config
-
+import os
 
 EMAIL_SUBJECT = 'Pergamum Renewal Extravaganza just ran'
 
 def send_mail(receiver, string):
     "Sends an email from receiver to receiver"
-
-    msg = compose_mail(config.PRGRNW_EMAIL_ADDR, receiver, string)
+    prgrnw_email_addr = os.getenv('PRGRNW_EMAIL_ADDR')
+    prgrnw_email_pwd = os.getenv('PRGRNW_EMAIL_PWD')
+    prgrnw_host_addr = 'smtp-mail.outlook.com'
+    prgrnw_port_nmbr = 587
+    msg = compose_mail(prgrnw_email_addr, receiver, string)
     # The actual mail send
-    server = smtplib.SMTP(host=config.PRGRNW_HOST_ADDR,
-                          port=config.PRGRNW_PORT_NMBR)
+    server = smtplib.SMTP(host=prgrnw_host_addr,
+                          port=prgrnw_port_nmbr)
     server.starttls()
-    server.login(config.PRGRNW_EMAIL_ADDR, config.PRGRNW_EMAIL_PWD)
+    server.login(prgrnw_email_addr, prgrnw_email_pwd)
     server.send_message(msg)
     server.quit()
 

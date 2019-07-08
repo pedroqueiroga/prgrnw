@@ -5,7 +5,6 @@ import os
 from send_mail import send_mail
 from utils import atq_user_dates, parse_cmd_line, add_job
 import database
-import config
 import exceptions
 
 from selenium import webdriver
@@ -20,8 +19,9 @@ def prgrnw(user):
 
    big_email_string = ''
    try:
-      mydb = database.PrgrnwDB('pedro', config.DB_PASSWD)
+      mydb = database.PrgrnwDB('pedro', os.getenv('DB_PASSWD'))
    except Exception as e:
+      print(e)
       # these catches should actually log
       string = 'Cheque o arquivo das credenciais, algo não está correto.'
       print(string)
