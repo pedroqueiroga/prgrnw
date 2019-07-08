@@ -25,7 +25,7 @@ SECRET_KEY = 'j!ztwlkgcy4(2*m=s)b2jrozp!igfw2(nkt0+t&xohy=)3be33'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'pergamum-renewal-extravaganza.herokuapp.com']
 
 
 # Application definition
