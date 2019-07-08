@@ -1,3 +1,2 @@
-web: gunicorn  prgrnw.wsgi --log-file -
-worker: python worker.py &
-        python scheduler.py
+web: gunicorn prgrnw.wsgi --log-file -
+worker: python src/worker.py & python src/scheduler.py & wait -n
