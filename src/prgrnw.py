@@ -1,6 +1,7 @@
 import datetime
 import time
 import os
+import sys
 
 from send_mail import send_mail
 from utils import atq_user_dates, parse_cmd_line, add_job
@@ -17,9 +18,12 @@ from selenium.webdriver.chrome.options import Options
 
 def prgrnw(user):
 
+   print('running prgrnw for', user)
+   sys.stdout.flush()
+
    big_email_string = ''
    try:
-      mydb = database.PrgrnwDB('pedro', os.getenv('DB_PASSWD'))
+      mydb = database.PrgrnwDB()
    except Exception as e:
       print(e)
       # these catches should actually log
@@ -29,15 +33,18 @@ def prgrnw(user):
 
    try:
       creds = mydb.get_user(user)
+      print(creds)
+      sys.stdout.flush()
    except Exception as e:
       print(e)
       string = 'Usuario \'{}\' não consta na base de dados'.format(user)
       print(string)
+      sys.stdout.flush()
       return
    finally:
       mydb.close()
 
-   username, cpf, senha, email = creds
+   cpf, senha, email = creds
    
    options = Options()
    options.headless = True
@@ -147,7 +154,7 @@ def prgrnw(user):
       print(string)
 
    if len(possible_return_dates) > 0:
-      contemplated_dates=atq_user_dates(possible_return_dates, username)
+      contemplated_dates=atq_user_dates(possible_return_dates, cpf)
       new_dates = []
       for i in possible_return_dates:
          if i not in contemplated_dates:
@@ -171,8 +178,8 @@ def prgrnw(user):
 
       # add job
       print('adding job!!!')
-      print(d,username)
-      add_job(d, username)
+      print(d,cpf)
+      add_job(d, cpf)
 
    if len(late) > 0 or len(cant_renew) > 0:
       string = '-' * 80

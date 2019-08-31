@@ -7,7 +7,7 @@ import os
 EMAIL_SUBJECT = 'Pergamum Renewal Extravaganza just ran'
 
 def send_mail(receiver, string):
-    "Sends an email from receiver to receiver"
+    "Sends an email from prgrnw to receiver"
     prgrnw_email_addr = os.getenv('PRGRNW_EMAIL_ADDR')
     prgrnw_email_pwd = os.getenv('PRGRNW_EMAIL_PWD')
     prgrnw_host_addr = 'smtp-mail.outlook.com'

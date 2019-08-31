@@ -1,6 +1,7 @@
 import psycopg2
 import exceptions
 import os
+import sys
 
 from cryptography.fernet import Fernet
 
@@ -9,48 +10,58 @@ class PrgrnwDB:
 
     __db_name='prgrnw'
 
-    def __init__(self, user, passwd):
+    def __init__(self):
+        db_url = os.environ.get('DATABASE_URL')
         self.__cnx = psycopg2.connect(
-            user=user,
-            password=passwd,
-            dbname=self.__db_name
+            db_url,
+            sslmode='require'
         )
 
         
-    def get_user(self, username):
+    def get_user(self, cpf):
         k = os.environ.get('DB_ENC_KEY')
         if not k:
             raise exceptions.DBEncKeyNotFound("Chave de criptografia não pode ser obtida")
         frn = Fernet(k.encode())
 
         cursor = self.__cnx.cursor()
-        cursor.execute('SELECT * FROM users WHERE username = \'{}\''.format(username))
+        cursor.execute('SELECT cpf, senha, email FROM users WHERE cpf = \'{}\''.format(cpf))
         result_encrypted = cursor.fetchone()
 
-        result_unenc = [result_encrypted[1]]
-        result_unenc += [ frn.decrypt(i.encode()).decode() for i in result_encrypted[2:] ]
+        print('r2e')
+        print(result_encrypted)
+        for i in result_encrypted:
+            print(i)
+        
+
+
+        result_unenc = [result_encrypted[0]]
+        result_unenc += [ frn.decrypt(i.encode()).decode() for i in result_encrypted[1:] ]
+
+        print('rune', result_unenc)
+        sys.stdout.flush()
         return result_unenc
 
-    def update_user(self, username, cpf=None, senha=None, email=None):
+    def update_user(self, cpf=None, senha=None, email=None):
         pass
 
-    def insert_user(self, username, cpf, senha, email):
+    def insert_user(self, cpf, senha, email):
         k = os.environ.get('DB_ENC_KEY')
         if not k:
             raise exceptions.DBEncKeyNotFound("Chave de criptografia não pode ser obtida")
         frn = Fernet(k.encode())
 
-        encrypted_cpf = frn.encrypt(cpf.encode())
+        #encrypted_cpf = frn.encrypt(cpf.encode())
         encrypted_senha = frn.encrypt(senha.encode())
         encrypted_email = frn.encrypt(email.encode())
 
         try:
             cursor = self.__cnx.cursor()
-            cursor.execute('INSERT INTO users (username, cpf, senha, email) VALUES (\'{}\', \'{}\', \'{}\', \'{}\')'.format(username, encrypted_cpf.decode(), encrypted_senha.decode(), encrypted_email.decode()))
+            cursor.execute('INSERT INTO users (cpf, senha, email) VALUES (\'{}\', \'{}\', \'{}\')'.format(cpf, encrypted_senha.decode(), encrypted_email.decode()))
             cursor.close()
             self.__cnx.commit()
         except Exception as e:
-            print(e.message, e.args)
+            print(e)
             return False
         
         return True

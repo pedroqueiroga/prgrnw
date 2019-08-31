@@ -8,3 +8,4 @@ myvenv
 jobs.sqlite
 db.sqlite3
 staticfiles
+\.env

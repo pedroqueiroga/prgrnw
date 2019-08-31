@@ -12,7 +12,9 @@ HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
 PORT = 65432        # Port to listen on (non-privileged ports are > 1023)
 
 scheduler = BackgroundScheduler()
-scheduler.add_jobstore(SQLAlchemyJobStore(url='sqlite:///jobs.sqlite'))
+url = os.environ.get('HEROKU_POSTGRESQL_PINK_URL', 'sqlite:///jobs.sqlite')
+
+scheduler.add_jobstore(SQLAlchemyJobStore(url=url))
 
 scheduler.start()
 
