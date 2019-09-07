@@ -21,11 +21,8 @@ def cmd(command):
 
     return ret
 
-def atq_user_dates(dates_wanted, user_wanted):
-    "dates_wanted deve ser [date]"
 
-    print(dates_wanted)
-
+def get_jobs(user):
     HOST='127.0.0.1'
     PORT=65432
     BUFFSIZE=1024
@@ -46,8 +43,27 @@ def atq_user_dates(dates_wanted, user_wanted):
     else:
         raise Exception("teste")
 
+    matches = list(filter(lambda x: x.name == user, jobs))
+
+    return matches
+
+
+def get_jobs_dates(user):
+    "retorna lista de datas dos proximos jobs"
+    jobs = get_jobs(user)
+
+    return [ datetime.datetime.date(i.next_run_time) for i in jobs ]
+
+
+def atq_user_dates(dates_wanted, user_wanted):
+    "dates_wanted deve ser [date]"
+
+    print(dates_wanted)
+
+    jobs = get_jobs(user_wanted)
+
     print('jobs', jobs)
-    matches = list(filter(lambda x: (datetime.datetime.date(x.next_run_time) in dates_wanted and x.name == user_wanted), jobs))
+    matches = list(filter(lambda x: datetime.datetime.date(x.next_run_time) in dates_wanted, jobs))
     print('matches', matches)
     for match in matches:
         print(match)
@@ -58,6 +74,7 @@ def parse_cmd_line():
         return sys.argv[1]
     else:
         return ''
+
 
 def add_job(date, uid, now=False):
     HOST='127.0.0.1'

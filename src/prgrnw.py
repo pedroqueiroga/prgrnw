@@ -4,7 +4,7 @@ import os
 import sys
 
 from send_mail import send_mail
-from utils import atq_user_dates, parse_cmd_line, add_job
+from utils import atq_user_dates, parse_cmd_line, add_job, get_jobs_dates
 import database
 import exceptions
 
@@ -249,8 +249,18 @@ def prgrnw(user):
          string = '\t' + b
          big_email_string += string + '\n'
          print(string)
-      
 
+   job_dates = get_jobs_dates(cpf)
+
+   if len(job_dates) > 0:
+      string = '\nPróximas execuções:'
+      big_email_string += string + '\n'
+      print(string)
+      for d in job_dates:
+         string = '\t' + d.strftime("%d/%m/%Y")
+         big_email_string += string + '\n'
+         print(string)
+      
    print('*'*80)
    big_email_string += ('*' * 80) + '\n'
    browser.quit()
