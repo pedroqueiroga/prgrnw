@@ -41,13 +41,12 @@ def dale():
 
     sys.stdout.flush()
 
-    # return render_template('index.html')
     try:
         mydb = database.PrgrnwDB()
     except Exception as e:
         print('meerdaaaaa no banco')
         sys.stdout.flush()
-        return render_template('index.html')
+        return render_template('index.html', feedback='Algo deu errado, tente novamente mais tarde. (ERRO W1)')
 
     # TODO: checar se ja esta cadastrado
     creds=None
@@ -58,21 +57,24 @@ def dale():
         print(e)
         sys.stdout.flush()
 
-    # TODO: se nao for cadastrado, cadastrar
-    try:
-        mydb.insert_user(form['perg-cpf'], form['perg-passw'], form['perg-email'])
-    except Exception as e:
-        print('deu merda aqui no insert??')
-        print(e)
-        sys.stdout.flush()
-        return render_template('index.html')
-    finally:
-        mydb.close()
+    if not creds:
+        try:
+            print('usuario nao localizado, inserindo...')
+            mydb.insert_user(form['perg-cpf'], form['perg-passw'], form['perg-email'])
+            print('ok')
+            sys.stdout.flush()
+        except Exception as e:
+            print('deu merda aqui no insert??')
+            print(e)
+            sys.stdout.flush()
+            return render_template('index.html', feedback='Algo deu errado, tente novamente mais tarde. (ERRO W2)')
+        finally:
+            mydb.close()
 
-    # if valid user, puts popo to worker, so worker dyno will run prgrnw
+    # if inserted or already existed, puts popo to worker, so worker dyno will run prgrnw
     popo(form['perg-cpf'])
-        
-    return render_template('index.html')
+    
+    return render_template('index.html', feedback='Cheque sua caixa de entrada/spam em breve!')
 
 #@app.route('/oie')
 def list_jobs():

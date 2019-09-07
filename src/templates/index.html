@@ -22,6 +22,10 @@
       <input name="perg-passw" type="text" placeholder="senha do pergamum">
       <button type="submit">ao clicar neste botão você aceita total responsabilidade pelo uso deste serviço</button>
     </form>
+    {% if feedback %}
+    {{ feedback }}
+    {% else %}
+    {% endif %}
     <br>
     <br>
     Melhorias:
