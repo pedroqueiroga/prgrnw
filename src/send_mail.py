@@ -4,7 +4,7 @@ from email.mime.text import MIMEText
 
 import os
 
-EMAIL_SUBJECT = 'Pergamum Renewal Extravaganza just ran'
+EMAIL_SUBJECT = 'Pergamum Renewal Extravaganza acabou de rodar'
 
 def send_mail(receiver, string):
     "Sends an email from prgrnw to receiver"

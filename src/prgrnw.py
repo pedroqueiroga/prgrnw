@@ -13,7 +13,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 
 def prgrnw(user):
@@ -52,14 +52,41 @@ def prgrnw(user):
 
    timeout=10 # seconds
    browser.set_page_load_timeout(timeout)
-   try:
-      browser.get('http://pergamum.ufpe.br/pergamum/biblioteca/index.php')
-   except TimeoutException:
-      # if timeout, stop page load, should continue working just as fine
-      browser.execute_script("window.stop();")
+   n_tries = 10 # try to connect 10 times before giving up.
 
-   div_login = browser.find_element_by_id('div_login')
-   div_login.click()
+   div_login = None
+   for i in range(n_tries):
+      try:
+         browser.get('http://pergamum.ufpe.br/pergamum/biblioteca/index.php')
+         div_login = browser.find_element_by_id('div_login')
+         break
+      except TimeoutException:
+         # if timeout, stop page load, should continue working just as fine
+         try:
+            browser.execute_script("window.stop();")
+            div_login = browser.find_element_by_id('div_login')
+            break;
+         except:
+            # if something goes wrong, try again.
+            time.sleep(15) # try again in 15 seconds perhaps
+            continue
+      except NoSuchElementException:
+         time.sleep(15)
+         continue
+
+   if div_login:
+      div_login.click()
+   else:
+      # too many tries and nothing, send mail to user to check
+      # pergamum manually
+      string ='Não foi possível acessar o Pergamum. Cheque se ele está fora do ar e solicite uma nova execução se/quando não estiver.'
+      big_email_string += string + '\n'
+      print(string)
+      browser.quit()
+      send_mail(email, big_email_string)
+      return
+      
+      
 
    wait = WebDriverWait(browser, 10)
    # waiting for the login text box to show
@@ -80,7 +107,9 @@ def prgrnw(user):
       string ='Não foi possível fazer o login no Pergamum. Cheque seu CPF e senha.'
       big_email_string += string + '\n'
       print(string)
+      print(e)
       browser.quit()
+      send_mail(email, big_email_string)
       return
 
    meu_pergamum = browser.find_element_by_link_text('Meu Pergamum')
@@ -88,7 +117,16 @@ def prgrnw(user):
 
    # wait for new window (meu pergamum)
    # 2 because before this one opened, there was only 1 window handler!
-   wait.until(lambda _: len(browser.window_handles) == 2)
+   try:
+      wait.until(lambda _: len(browser.window_handles) == 2)
+   except Exception as e:
+      string = 'Algum erro aconteceu durante a execução do Pergamum Renewal Extravaganza. Não foi possível checar seus livros, tente solicitar uma nova execução.'
+      big_email_string += string + '\n'
+      print(string)
+      print(e)
+      browser.quit()
+      send_mail(email, big_email_string)
+      return
 
    # switch to meu pergamum's window
    for handle in browser.window_handles:
@@ -99,7 +137,15 @@ def prgrnw(user):
    renovados = []
       
    while True:
-      new_date,book_name = renew_MP_books(browser)
+      try:
+         new_date,book_name = renew_MP_books(browser)
+      except Exception as e:
+         string = '\nAlgum erro aconteceu durante a execução do Pergamum Renewal Extravaganza. Não foi possível checar todos os seus livros, tente solicitar uma nova execução.'
+         big_email_string += string + '\n\n'
+         print(string)
+         print(e)
+         break
+         
       if new_date == None or book_name == None: # in reality, can't be just one, but this is looser, so it is better
          break
 
@@ -217,7 +263,7 @@ def stupid_format_date(date):
    return splitted[1] + '/' + splitted[0] + '/' +  splitted[2]
 
 def renew_MP_books(browser):
-   # like get_MP_books, but with less queries, since won't create 10 DOM references, when I only need one, because all the other get stale.
+   # like get_MP_books, but with less queries, since won't create 10 DOM references, when I only need one, because all the others get stale.
    wanted_div_id = 'Accordion1'
    # wait for Accordion1 to show
    WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.ID, wanted_div_id)))
