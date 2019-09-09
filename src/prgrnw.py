@@ -150,8 +150,6 @@ def prgrnw(user):
          break
 
       renovados.append((book_name, new_date))
-
-      up_dates.add(new_date)
       
    if len(renovados) > 0:
       string = 'RENOVADO' + ('S' if len(renovados) > 1 else '') + ':'
