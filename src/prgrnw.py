@@ -3,6 +3,7 @@ import time
 import os
 import sys
 import traceback
+import textwrap
 
 from send_mail import send_mail
 from utils import atq_user_dates, parse_cmd_line, add_job, get_jobs_dates
@@ -15,8 +16,8 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from selenium.webdriver.firefox.options import Options
-#from selenium.webdriver.chrome.options import Options
+#from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.chrome.options import Options
 
 def prgrnw(user, test_mode=False):
 
@@ -53,7 +54,7 @@ def prgrnw(user, test_mode=False):
    
    options = Options()
    options.headless = True
-   browser = webdriver.Firefox(options=options)
+   browser = webdriver.Chrome(options=options)
 
    timeout=10 # seconds
    browser.set_page_load_timeout(timeout)
@@ -84,7 +85,9 @@ def prgrnw(user, test_mode=False):
    else:
       # too many tries and nothing, send mail to user to check
       # pergamum manually
-      string ='Não foi possível acessar o Pergamum. Cheque se ele está fora do ar e solicite uma nova execução se/quando não estiver.'
+      string = textwrap.fill(('Não foi possível acessar o Pergamum. Cheque se'
+                              'ele está fora do ar e solicite uma nova'
+                              'execução se/quando não estiver.'), width=80)
       big_email_string += string + '\n'
       print(string)
       browser.quit()
@@ -125,7 +128,10 @@ def prgrnw(user, test_mode=False):
    try:
       wait.until(lambda _: len(browser.window_handles) == 2)
    except Exception as e:
-      string = 'Algum erro aconteceu durante a execução do Pergamum Renewal Extravaganza. Não foi possível checar seus livros, tente solicitar uma nova execução.'
+      string = textwrap.fill(('Algum erro aconteceu durante a execução do'
+                              'Pergamum Renewal Extravaganza. Não foi possível'
+                              'checar seus livros, tente solicitar uma nova'
+                              'execução.'), width=80)
       big_email_string += string + '\n'
       print(string)
       print(e)
@@ -154,8 +160,12 @@ def prgrnw(user, test_mode=False):
          traceback.print_exc()
          max_broken_tries += 1
          if broken_tries == 10:
-            string = '\nAlgum erro aconteceu durante a execução do Pergamum Renewal Extravaganza. Não foi possível checar todos os seus livros, tente solicitar uma nova execução.'
-            big_email_string += string + '\n\n'
+            string = '\n' + textwrap.fill(
+               ('Algum erro aconteceu durante a execução'
+                'do Pergamum Renewal Extravaganza. Não foi'
+                'possível checar todos os seus livros, '
+                'tente solicitar uma nova execução.'), width=80) + '\n'
+            big_email_string += string + '\n'
             print(string)
          break
          
@@ -171,7 +181,7 @@ def prgrnw(user, test_mode=False):
 
    for renovado in renovados:
       book_name, new_date = renovado
-      string = '\t' + book_name
+      string = '\n\t'.join(textwrap.wrap(('\t' + book_name), width=80)) + '\n'
       big_email_string += string + '\n'
       print(string)
 
@@ -181,12 +191,21 @@ def prgrnw(user, test_mode=False):
          
    books = get_MP_books(browser)
 
-   string = '*** Estado atual dos livros ***'
+   string = ' Estado atual dos livros '.center(80, '*')
    big_email_string += string + '\n'
    print(string)
 
-   if (not none_late):
-      string = 'VOCÊ NÃO PODE RENOVAR LIVROS POR CAUSA DE DÉBITO!'
+   if len(books) == 0:
+      string = 'Zero livros. Isto significa que minha recursão chegou ao fim.\n'
+      string += ('*' * 80)
+      big_email_string += string + '\n'
+      print(string)
+      browser.quit()
+      send_mail(email, big_email_string)
+      return
+      
+   if (not none_late) and len(books) > 0:
+      string = '\nVOCÊ NÃO PODE RENOVAR LIVROS POR CAUSA DE DÉBITO!\n'
       big_email_string += string + '\n'
       print(string)
 
@@ -218,7 +237,7 @@ def prgrnw(user, test_mode=False):
       print(string)
 
    if len(possible_return_dates) > 0:
-      contemplated_dates=atq_user_dates(possible_return_dates, cpf)
+      contemplated_dates = atq_user_dates(possible_return_dates, cpf)
       new_dates = []
       today = datetime.date.today()
       for i in possible_return_dates:
@@ -230,7 +249,6 @@ def prgrnw(user, test_mode=False):
 
    for d in up_dates:
       string = '\t' + d.strftime("%d/%m/%Y")
-      big_email_string += string + '\n'
       print(string)
 
       # add job
@@ -248,7 +266,7 @@ def prgrnw(user, test_mode=False):
       big_email_string += string + '\n'
       print(string)
       for b in late:
-         string = '\t' + b
+         string = '\n\t'.join(textwrap.wrap('\t' + b, width=80)) + '\n'
          big_email_string += string + '\n'
          print(string)
 
@@ -257,7 +275,7 @@ def prgrnw(user, test_mode=False):
       big_email_string += string + '\n'
       print(string)
       for b in cant_renew:
-         string = '\t' + b
+         string = '\n\t'.join(textwrap.wrap('\t' + b, width=80)) + '\n'
          big_email_string += string + '\n'
          print(string)
 
@@ -402,7 +420,7 @@ def book_str_info(book, some_late):
 
    nreturns_left = book_returns_left(book)
    
-   info += '> ' + book_name.text + '\n'
+   info += '\n  '.join(textwrap.wrap('> ' + book_name.text, width=80)) + '\n'
 
    if not book_exp:
       info += '\tTempo de aluguel restante: ' +  portuguese_tl + '\n'

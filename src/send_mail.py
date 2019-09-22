@@ -4,15 +4,17 @@ from email.mime.text import MIMEText
 
 import os
 
-EMAIL_SUBJECT = 'Pergamum Renewal Extravaganza acabou de rodar'
-
 def send_mail(receiver, string):
     "Sends an email from prgrnw to receiver"
     prgrnw_email_addr = os.getenv('PRGRNW_EMAIL_ADDR')
     prgrnw_email_pwd = os.getenv('PRGRNW_EMAIL_PWD')
     prgrnw_host_addr = 'smtp-mail.outlook.com'
     prgrnw_port_nmbr = 587
-    msg = compose_mail(prgrnw_email_addr, receiver, string)
+
+    subject = 'Pergamum Renewal Extravaganza acabou de rodar'
+
+    msg = compose_mail(prgrnw_email_addr, receiver,
+                       subject, string)
     # The actual mail send
     server = smtplib.SMTP(host=prgrnw_host_addr,
                           port=prgrnw_port_nmbr)
@@ -22,14 +24,19 @@ def send_mail(receiver, string):
     server.quit()
 
 
-def compose_mail(sender, receiver, message):
+def compose_mail(sender, receiver, subject, message):
+
     mail = MIMEMultipart()
 
     mail['From'] = sender
     mail['To'] = receiver
-    mail['Subject'] = EMAIL_SUBJECT
+    mail['Subject'] = subject
 
-    mail.attach(MIMEText(message, 'plain'))
+    formatted_string = MIMEText(
+        ('<font face="Courier New, Courier, monospace"><pre>' +
+         message + '</pre></font>'), 'html')
+
+    mail.attach(formatted_string)
 
     return mail
 
