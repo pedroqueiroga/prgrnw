@@ -70,8 +70,8 @@ def atq_user_dates(dates_wanted, user_wanted):
     return [ datetime.datetime.date(i.next_run_time) for i in matches ]
         
 def parse_cmd_line():
-    if len(sys.argv) > 1:
-        return sys.argv[1]
+    if len(sys.argv) > 2:
+        return sys.argv[1], sys.argv[2]
     else:
         return ''
 

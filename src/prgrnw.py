@@ -2,6 +2,7 @@ import datetime
 import time
 import os
 import sys
+import traceback
 
 from send_mail import send_mail
 from utils import atq_user_dates, parse_cmd_line, add_job, get_jobs_dates
@@ -14,41 +15,45 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.firefox.options import Options
+#from selenium.webdriver.chrome.options import Options
 
-def prgrnw(user):
+def prgrnw(user, test_mode=False):
 
    print('running prgrnw for', user)
    sys.stdout.flush()
 
    big_email_string = ''
-   try:
-      mydb = database.PrgrnwDB()
-   except Exception as e:
-      print(e)
-      # these catches should actually log
-      string = 'Cheque o arquivo das credenciais, algo não está correto.'
-      print(string)
-      return
+   if test_mode:
+      creds = user[0], user[1], 'prgrnw@outlook.com'
+   else:
+      try:
+         mydb = database.PrgrnwDB()
+      except Exception as e:
+         print(e)
+         # these catches should actually log
+         string = 'Cheque o arquivo das credenciais, algo não está correto.'
+         print(string)
+         return
 
-   try:
-      creds = mydb.get_user(user)
-      print(creds)
-      sys.stdout.flush()
-   except Exception as e:
-      print(e)
-      string = 'Usuario \'{}\' não consta na base de dados'.format(user)
-      print(string)
-      sys.stdout.flush()
-      return
-   finally:
-      mydb.close()
+      try:
+         creds = mydb.get_user(user)
+         print(creds)
+         sys.stdout.flush()
+      except Exception as e:
+         print(e)
+         string = 'Usuario \'{}\' não consta na base de dados'.format(user)
+         print(string)
+         sys.stdout.flush()
+         return
+      finally:
+         mydb.close()
 
    cpf, senha, email = creds
    
    options = Options()
    options.headless = True
-   browser = webdriver.Chrome(options=options)
+   browser = webdriver.Firefox(options=options)
 
    timeout=10 # seconds
    browser.set_page_load_timeout(timeout)
@@ -135,15 +140,23 @@ def prgrnw(user):
    up_dates = set()
 
    renovados = []
-      
-   while True:
+
+   # check if there is a late book
+   none_late=get_MP_books(browser, late_exit=True)
+
+   broken_tries = 0
+   
+   while none_late:
       try:
          new_date,book_name = renew_MP_books(browser)
       except Exception as e:
-         string = '\nAlgum erro aconteceu durante a execução do Pergamum Renewal Extravaganza. Não foi possível checar todos os seus livros, tente solicitar uma nova execução.'
-         big_email_string += string + '\n\n'
-         print(string)
-         print(e)
+         print('Erro durante a execucao do renew_MP_books(browser), linha 151')
+         traceback.print_exc()
+         max_broken_tries += 1
+         if broken_tries == 10:
+            string = '\nAlgum erro aconteceu durante a execução do Pergamum Renewal Extravaganza. Não foi possível checar todos os seus livros, tente solicitar uma nova execução.'
+            big_email_string += string + '\n\n'
+            print(string)
          break
          
       if new_date == None or book_name == None: # in reality, can't be just one, but this is looser, so it is better
@@ -172,6 +185,11 @@ def prgrnw(user):
    big_email_string += string + '\n'
    print(string)
 
+   if (not none_late):
+      string = 'VOCÊ NÃO PODE RENOVAR LIVROS POR CAUSA DE DÉBITO!'
+      big_email_string += string + '\n'
+      print(string)
+
    late = []
    cant_renew = []
    possible_return_dates = set()
@@ -179,7 +197,7 @@ def prgrnw(user):
    
    for book in books:
 
-      string=book_str_info(book)
+      string=book_str_info(book, (not none_late))
       big_email_string += string + '\n'
 
       return_date = book[1].text.strip()
@@ -191,8 +209,10 @@ def prgrnw(user):
          cant_renew.append(book_name)
       else:
          dmy = list(map(int, return_date.split('/')))[::-1]
+         
 
-         possible_return_dates.add(datetime.date(*dmy))
+         possible_return_dates.add((datetime.date(*dmy) -
+                                    datetime.timedelta(days=1)))
          possible_return_names.append(book_name)
 
       print(string)
@@ -200,20 +220,13 @@ def prgrnw(user):
    if len(possible_return_dates) > 0:
       contemplated_dates=atq_user_dates(possible_return_dates, cpf)
       new_dates = []
+      today = datetime.date.today()
       for i in possible_return_dates:
-         if i not in contemplated_dates:
+         if (i not in contemplated_dates) and (i != today):
             up_dates.add(i)
       
    n_days = len(up_dates)
    print('up_dates', up_dates)
-   plural = ''
-   if n_days >= 2:
-      plural = 's'
-
-   if n_days > 0:
-      string = 'criando job para rodar no' + plural + ' dia' + plural +':'
-      big_email_string += string +'\n'
-      print(string)
 
    for d in up_dates:
       string = '\t' + d.strftime("%d/%m/%Y")
@@ -290,12 +303,15 @@ def renew_MP_books(browser):
 
       if book_should_renew(book):
          book_name = book[0].text
-         new_date = renew(browser, book)
+         try:
+            new_date = renew(browser, book)
+         except:
+            raise
          break
 
    return new_date, book_name
          
-def get_MP_books(browser):
+def get_MP_books(browser, late_exit=False):
    "gets books listed in Meu Pergamum's Pending Titles page"
    wanted_div_id = 'Accordion1'
    # wait for Accordion1 to show
@@ -311,6 +327,12 @@ def get_MP_books(browser):
       for td in tr.find_elements_by_xpath("./td[position()>1 and position() < last()]"):
          # first and last td are useless to us.
          book_info.append(td)
+
+      if late_exit:
+         timeleft = book_timeleft(book_info)
+         book_exp = book_expired(timeleft)
+         if book_exp:
+            return False
 
       books.append(book_info)
 
@@ -332,6 +354,9 @@ def renew(browser, book):
    wanted_div_id = 'Accordion1'
    # wait for Accordion1 to show
    WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.ID, wanted_div_id)))
+
+   if new_rd == "Renovação Cancelada. Este exemplar se encontra em atraso.":
+      new_rd = False
 
    return new_rd
 
@@ -356,7 +381,7 @@ def book_expired(timeleft):
 def book_should_renew(book):
    timeleft = book_timeleft(book)
    nreturns_left = book_returns_left(book)
-   return timeleft.days == 0 and nreturns_left > 0
+   return timeleft.days >= 0 and timeleft.days <= 1 and nreturns_left > 0
 
 def book_returns_left(book):
    # book_name, book_return, book_limit, book_renewal = book
@@ -366,7 +391,7 @@ def book_returns_left(book):
 
    return nreturns_left
 
-def book_str_info(book):
+def book_str_info(book, some_late):
    # book_name, book_return, book_limit, book_renewal = book
    info = ''
    book_name = book[0]
@@ -385,7 +410,7 @@ def book_str_info(book):
       info += '\tEste livro está atrasado ' + str(-(timeleft.days)) + ' dia' + ('s.' if timeleft.days < -1 else '.') + '\n'
 
    end = ('' if timeleft.days < 2 and timeleft.days >= 0 else '\n')
-   if nreturns_left > 0 and not book_exp:
+   if nreturns_left > 0 and (not book_exp) and (not some_late):
       info += '\tVocê pode renová-lo mais ' + str(nreturns_left) + ' vez' + ('es.' if nreturns_left > 1 else '.') + end
       if timeleft.days == 0:
          info += ' Renove este livro ainda hoje!!\n'
@@ -402,4 +427,4 @@ def book_str_info(book):
    
 
 if __name__ == '__main__':
-   prgrnw(parse_cmd_line())
+   prgrnw(parse_cmd_line(), test_mode=True)
