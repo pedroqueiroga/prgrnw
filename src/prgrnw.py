@@ -196,7 +196,8 @@ def prgrnw(user, test_mode=False):
    print(string)
 
    if len(books) == 0:
-      string = 'Zero livros. Isto significa que minha recursão chegou ao fim.\n'
+      string = '*' + ('Zero livros. Isto significa que minha recursão '
+                      'chegou ao fim.').center(78) + '*\n'
       string += ('*' * 80)
       big_email_string += string + '\n'
       print(string)
