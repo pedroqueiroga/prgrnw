@@ -181,11 +181,11 @@ def prgrnw(user, test_mode=False):
 
    for renovado in renovados:
       book_name, new_date = renovado
-      string = '\n\t'.join(textwrap.wrap(('\t' + book_name), width=80)) + '\n'
+      string = '\n\t'.join(textwrap.wrap(('\t' + book_name), width=80))
       big_email_string += string + '\n'
       print(string)
 
-      string = '\t' + new_date
+      string = '\tNova data: ' + new_date + '\n'
       big_email_string += string + '\n'
       print(string)
          
