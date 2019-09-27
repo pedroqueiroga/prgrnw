@@ -150,7 +150,7 @@ def prgrnw(user, test_mode=False):
    # check if there is a late book
    none_late=get_MP_books(browser, late_exit=True)
 
-   broken_tries = 0
+   max_broken_tries = 0
    
    while none_late:
       try:
