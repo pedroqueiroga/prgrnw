@@ -156,10 +156,11 @@ def prgrnw(user, test_mode=False):
       try:
          new_date,book_name = renew_MP_books(browser)
       except Exception as e:
-         print('Erro durante a execucao do renew_MP_books(browser), linha 151')
+         print('Erro durante a execucao do renew_MP_books(browser), linha 157')
          traceback.print_exc()
          max_broken_tries += 1
-         if broken_tries == 10:
+
+         if max_broken_tries == 10:
             string = '\n' + textwrap.fill(
                ('Algum erro aconteceu durante a execução'
                 'do Pergamum Renewal Extravaganza. Não foi'
@@ -167,7 +168,9 @@ def prgrnw(user, test_mode=False):
                 'tente solicitar uma nova execução.'), width=80) + '\n'
             big_email_string += string + '\n'
             print(string)
-         break
+            break
+         
+         continue
          
       if new_date == None or book_name == None: # in reality, can't be just one, but this is looser, so it is better
          break
@@ -400,7 +403,7 @@ def book_expired(timeleft):
 def book_should_renew(book):
    timeleft = book_timeleft(book)
    nreturns_left = book_returns_left(book)
-   return timeleft.days >= 0 and timeleft.days <= 1 and nreturns_left > 0
+   return (timeleft.days >= 0 and timeleft.days <= 1 and nreturns_left > 0) or timeleft.days == 9
 
 def book_returns_left(book):
    # book_name, book_return, book_limit, book_renewal = book
