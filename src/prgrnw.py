@@ -128,9 +128,9 @@ def prgrnw(user, test_mode=False):
    try:
       wait.until(lambda _: len(browser.window_handles) == 2)
    except Exception as e:
-      string = textwrap.fill(('Algum erro aconteceu durante a execução do'
-                              'Pergamum Renewal Extravaganza. Não foi possível'
-                              'checar seus livros, tente solicitar uma nova'
+      string = textwrap.fill(('Algum erro aconteceu durante a execução do '
+                              'Pergamum Renewal Extravaganza. Não foi possível '
+                              'checar seus livros, tente solicitar uma nova '
                               'execução.'), width=80)
       big_email_string += string + '\n'
       print(string)
@@ -151,19 +151,21 @@ def prgrnw(user, test_mode=False):
    none_late=get_MP_books(browser, late_exit=True)
 
    max_broken_tries = 0
+
+   books_to_ignore = []
    
    while none_late:
       try:
-         new_date,book_name = renew_MP_books(browser)
+         new_date,book_name = renew_MP_books(browser, books_to_ignore)
       except Exception as e:
-         print('Erro durante a execucao do renew_MP_books(browser), linha 157')
+         print('Erro durante a execucao do renew_MP_books(browser), linha 159')
          traceback.print_exc()
          max_broken_tries += 1
 
-         if max_broken_tries == 10:
+         if max_broken_tries == 5:
             string = '\n' + textwrap.fill(
-               ('Algum erro aconteceu durante a execução'
-                'do Pergamum Renewal Extravaganza. Não foi'
+               ('Algum erro aconteceu durante a execução '
+                'do Pergamum Renewal Extravaganza. Não foi '
                 'possível checar todos os seus livros, '
                 'tente solicitar uma nova execução.'), width=80) + '\n'
             big_email_string += string + '\n'
@@ -171,6 +173,13 @@ def prgrnw(user, test_mode=False):
             break
          
          continue
+
+      if new_date == False:
+         # Renewal attempt canceled. It probably has been reserved.
+         print('Adicionando', book_name, 'aos livros que devem ser ignorados.')
+         books_to_ignore.append(book_name)
+         continue
+         
          
       if new_date == None or book_name == None: # in reality, can't be just one, but this is looser, so it is better
          break
@@ -220,7 +229,7 @@ def prgrnw(user, test_mode=False):
    
    for book in books:
 
-      string=book_str_info(book, (not none_late))
+      string=book_str_info(book, (not none_late), books_to_ignore)
       big_email_string += string + '\n'
 
       return_date = book[1].text.strip()
@@ -230,7 +239,7 @@ def prgrnw(user, test_mode=False):
          late.append(book_name)
       elif book_returns_left(book) == 0:
          cant_renew.append(book_name)
-      else:
+      elif not (book_name in books_to_ignore):
          dmy = list(map(int, return_date.split('/')))[::-1]
          
 
@@ -260,7 +269,7 @@ def prgrnw(user, test_mode=False):
       print(d,cpf)
       add_job(d, cpf)
 
-   if len(late) > 0 or len(cant_renew) > 0:
+   if len(late) > 0 or len(cant_renew) > 0 or len(books_to_ignore) > 0:
       string = '-' * 80
       big_email_string += string + '\n'
       print(string)
@@ -279,6 +288,15 @@ def prgrnw(user, test_mode=False):
       big_email_string += string + '\n'
       print(string)
       for b in cant_renew:
+         string = '\n\t'.join(textwrap.wrap('\t' + b, width=80)) + '\n'
+         big_email_string += string + '\n'
+         print(string)
+
+   if len(books_to_ignore) > 0:
+      string = 'RESERVADO' + ('S' if len(books_to_ignore) > 1 else '') + ':'
+      big_email_string += string + '\n'
+      print(string)
+      for b in books_to_ignore:
          string = '\n\t'.join(textwrap.wrap('\t' + b, width=80)) + '\n'
          big_email_string += string + '\n'
          print(string)
@@ -305,7 +323,7 @@ def stupid_format_date(date):
       return None
    return splitted[1] + '/' + splitted[0] + '/' +  splitted[2]
 
-def renew_MP_books(browser):
+def renew_MP_books(browser, books_to_ignore=[]):
    # like get_MP_books, but with less queries, since won't create 10 DOM references, when I only need one, because all the others get stale.
    wanted_div_id = 'Accordion1'
    # wait for Accordion1 to show
@@ -323,7 +341,7 @@ def renew_MP_books(browser):
          # first and last td are useless to us.
          book.append(td)
 
-      if book_should_renew(book):
+      if not (book[0].text in books_to_ignore) and book_should_renew(book):
          book_name = book[0].text
          try:
             new_date = renew(browser, book)
@@ -377,7 +395,7 @@ def renew(browser, book):
    # wait for Accordion1 to show
    WebDriverWait(browser, 10).until(ec.presence_of_element_located((By.ID, wanted_div_id)))
 
-   if new_rd == "Renovação Cancelada. Este exemplar se encontra em atraso.":
+   if "Renovação" in new_rd:
       new_rd = False
 
    return new_rd
@@ -403,7 +421,7 @@ def book_expired(timeleft):
 def book_should_renew(book):
    timeleft = book_timeleft(book)
    nreturns_left = book_returns_left(book)
-   return (timeleft.days >= 0 and timeleft.days <= 1 and nreturns_left > 0) or timeleft.days == 9
+   return timeleft.days >= 0 and timeleft.days <= 1 and nreturns_left > 0
 
 def book_returns_left(book):
    # book_name, book_return, book_limit, book_renewal = book
@@ -413,10 +431,10 @@ def book_returns_left(book):
 
    return nreturns_left
 
-def book_str_info(book, some_late):
+def book_str_info(book, some_late, books_to_ignore=[]):
    # book_name, book_return, book_limit, book_renewal = book
    info = ''
-   book_name = book[0]
+   book_name = book[0].text
 
    timeleft = book_timeleft(book)
    portuguese_tl = pt_timeleft(timeleft)
@@ -424,7 +442,7 @@ def book_str_info(book, some_late):
 
    nreturns_left = book_returns_left(book)
    
-   info += '\n  '.join(textwrap.wrap('> ' + book_name.text, width=80)) + '\n'
+   info += '\n  '.join(textwrap.wrap('> ' + book_name, width=80)) + '\n'
 
    if not book_exp:
       info += '\tTempo de aluguel restante: ' +  portuguese_tl + '\n'
@@ -432,7 +450,8 @@ def book_str_info(book, some_late):
       info += '\tEste livro está atrasado ' + str(-(timeleft.days)) + ' dia' + ('s.' if timeleft.days < -1 else '.') + '\n'
 
    end = ('' if timeleft.days < 2 and timeleft.days >= 0 else '\n')
-   if nreturns_left > 0 and (not book_exp) and (not some_late):
+
+   if nreturns_left > 0 and (not book_exp) and (not some_late) and (not book_name in books_to_ignore):
       info += '\tVocê pode renová-lo mais ' + str(nreturns_left) + ' vez' + ('es.' if nreturns_left > 1 else '.') + end
       if timeleft.days == 0:
          info += ' Renove este livro ainda hoje!!\n'
